@@ -1,7 +1,16 @@
-body{
-  background: #0f172a;
-  color: white;
+body {
+  margin: 0;
+  padding: 0;
   font-family: Arial, sans-serif;
+
+  background: linear-gradient(
+    135deg,
+    #0f172a,
+    #1e293b,
+    #111827
+  );
+
+  color:white;
 }
 
 .container{
@@ -33,11 +42,18 @@ button{
   font-size: 15px;
 }
 
-.note-card{
-  background: #1e293b;
-  padding: 15px;
-  border-radius: 15px;
+.note-card {
+  background: rgba(255,255,255,0.08);
+  backdrop-filter: blur(10px);
+
+  border-radius: 16px;
+
+  padding: 20px;
   margin-top: 20px;
+
+  width: 320px;
+
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
 }
 
 .note-card h2{
@@ -57,4 +73,37 @@ button{
 .logout-btn{
   background: orange;
   color: white;
+}
+.note-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  background: rgba(255,255,255,0.05);
+
+  padding: 10px;
+  border-radius: 10px;
+
+  margin-top: 10px;
+}
+
+.note-row p {
+  margin: 0;
+}
+
+.delete-btn {
+  background: crimson;
+  border: none;
+
+  color: white;
+
+  padding: 8px 12px;
+
+  border-radius: 8px;
+
+  cursor: pointer;
+}
+.title-heading {
+  cursor: pointer;
+  user-select: none;
 }

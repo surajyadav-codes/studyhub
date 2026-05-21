@@ -1,9 +1,8 @@
-import { useState , useEffect} from 'react'
+import { useState, useEffect } from 'react'
 import './App.css'
 import { supabase } from './supabase'
 
 function App() {
-
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [note, setNote] = useState('')
@@ -12,178 +11,185 @@ function App() {
   const [user, setUser] = useState(null)
 
   async function saveNote() {
+    if (!user) {
+      alert('Please login before saving a note.')
+      return
+    }
 
-  const { data, error } = await supabase
-    .from('notes')
-    .insert([
+    const { data, error } = await supabase.from('notes').insert([
       {
-        title: title,
+        title,
         content: note,
-        user_id: user.id
-      }
+        user_id: user.id,
+      },
     ])
 
-  if(error){
-    alert(error.message)
-  } else {
-    alert('Note saved!')
-    getNotes()
-    console.log(data)
-  }
-}
-async function getNotes(currentUser = user) {
-
-  if(!currentUser) return
-
-  const { data, error } = await supabase
-    .from('notes')
-    .select('*')
-    .eq('user_id', currentUser.id)
-
-  if(error){
-    console.log(error)
-  } else {
-    setNotes(data)
-  }
-}
-async function login() {
-
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email: email,
-    password: password
-  })
-
-  if(error){
-    alert(error.message)
-  } else {
-    alert('Login successful!')
-    setUser(data.user)
-    getNotes()
-  }
-}
-async function signUp() {
-
-  const { data, error } = await supabase.auth.signUp({
-    email: email,
-    password: password
-  })
-
-  if(error){
-    alert(error.message)
-  } else {
-    alert('Signup successful!')
-    console.log(data)
-  }
-}
-async function getSession() {
-  const {data } = await supabase.auth.getSession()
-  const currentUser = data.session?.user || null
-  setUser(currentUser)
-  if(currentUser){
-    getNotes(currentUser)
-  }
-}
-useEffect(() => {
- getSession()
-
-
-  const channel = supabase
-    .channel('notes-channel')
-
-    .on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'notes',
-      },
-      () => {
-        getNotes()
-      }
-    )
-
-    .subscribe()
-
-  return () => {
-    supabase.removeChannel(channel)
+    if (error) {
+      alert(error.message)
+    } else {
+      alert('Note saved!')
+      setNote('')
+      setTitle('')
+      getNotes()
+      console.log(data)
+    }
   }
 
-}, [])
-async function deleteNote(id) {
+  async function getNotes(currentUser = user) {
+    if (!currentUser) return
 
-  const { error } = await supabase
-    .from('notes')
-    .delete()
-    .eq('id', id)
+    const { data, error } = await supabase
+      .from('notes')
+      .select('*')
+      .eq('user_id', currentUser.id)
 
-  if(error){
-    alert(error.message)
-  } else {
-    alert('Note deleted!')
-    getNotes()
+    if (error) {
+      console.log(error)
+    } else {
+      setNotes(data)
+    }
   }
-}
-async function logout() {
-  await supabase.auth.signOut() 
-  alert('Logged out!')
-  setUser(null)
-  setNotes([])
-}
+
+  async function login() {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+
+    if (error) {
+      alert(error.message)
+    } else {
+      alert('Login successful!')
+      setUser(data.user)
+      getNotes(data.user)
+    }
+  }
+
+  async function signUp() {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+    })
+
+    if (error) {
+      alert(error.message)
+    } else {
+      alert('Signup successful!')
+      console.log(data)
+    }
+  }
+
+  async function getSession() {
+    const { data } = await supabase.auth.getSession()
+    const currentUser = data.session?.user || null
+    setUser(currentUser)
+    if (currentUser) {
+      getNotes(currentUser)
+    }
+  }
+
+  useEffect(() => {
+    getSession()
+
+    const channel = supabase
+      .channel('notes-channel')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'notes',
+        },
+        () => {
+          getNotes()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [])
+
+  async function deleteNote(id) {
+    const { error } = await supabase.from('notes').delete().eq('id', id)
+
+    if (error) {
+      alert(error.message)
+    } else {
+      alert('Note deleted!')
+      getNotes()
+    }
+  }
+
+  async function logout() {
+    await supabase.auth.signOut()
+    alert('Logged out!')
+    setUser(null)
+    setNotes([])
+  }
+
+  const groupedNotes = notes.reduce((groups, item) => {
+    if (!groups[item.title]) {
+      groups[item.title] = []
+    }
+    groups[item.title].push(item)
+    return groups
+  }, {})
 
   return (
     <div className="container">
-
       <h1>StudyHub</h1>
-      <p>Status:{user ? 'Logged in' : 'Not logged in  '}</p>
-{
-  user && <p>logged in as: {user.email}  </p>
-}
-      <input
-        type="email"
-        placeholder="Enter email"
-        onChange={(e) => setEmail(e.target.value)}
-      />
+      <p>Status: {user ? 'Logged in' : 'Not logged in'}</p>
+      {user && <p>Logged in as: {user.email}</p>}
 
-      <br /><br />
+      <div className="auth-section">
+        <input
+          type="email"
+          value={email}
+          placeholder="Enter email"
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        <br />
+        <input
+          type="password"
+          value={password}
+          placeholder="Enter password"
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        <br />
+        <button onClick={signUp}>Sign Up</button>
+        <button onClick={login}>Login</button>
+      </div>
 
-      <input
-        type="password"
-        placeholder="Enter password"
-        onChange={(e) => setPassword(e.target.value)}
-      />
+      {user && (
+        <div className="note-section">
+          <input
+            type="text"
+            value={title}
+            placeholder="Enter title"
+            onChange={(e) => setTitle(e.target.value)}
+          />
+          <br />
+          <input
+            type="text"
+            value={note}
+            placeholder="Enter note"
+            onChange={(e) => setNote(e.target.value)}
+          />
+          <br />
+          <button className="save-btn" onClick={saveNote}>
+            Save Note
+          </button>
+          <button className="logout-btn" onClick={logout}>
+            Logout
+          </button>
+        </div>
+      )}
 
-      <br /><br />
-
-<input
-        type="text"
-        placeholder="Enter title"
-        onChange={(e) => setTitle(e.target.value)}
-      />
-      <br /><br /> 
-      <input
-        type="text"
-        placeholder="Enter note"
-        onChange={(e) => setNote(e.target.value)}
-      />
-      <br /><br />
-
-      <button onClick={signUp}>Sign Up</button>
-      <br /><br />
-<button onClick = {login}>Login </button>
-      <br /><br />
-
-      
-     <button className="save-btn" onClick={saveNote}>
-  Save Note
-</button>
-<br /><br />
-
-<button className="logout-btn" onClick={logout}>
-  Logout
-</button>
-<h2>Saved Notes</h2>
-
-{
+      <h2>Saved Notes</h2>
+      {
+     
   Object.entries(
     notes.reduce((groups, item) => {
 
@@ -204,28 +210,26 @@ async function logout() {
 
       {
         items.map((item) => (
-          <div key={item.id} className="note-card">
+
+          <div key={item.id} className="note-row">
 
             <p>{item.content}</p>
 
-            <button className="delete-btn" onClick={() => deleteNote(item.id)}>
+            <button
+              className="delete-btn"
+              onClick={() => deleteNote(item.id)}
+            >
               Delete
             </button>
-
-            <br /><br />
 
           </div>
         ))
       }
 
-      <hr />
-
     </div>
   ))
 }
-{!user && <h2>Please Login</h2>}  
     </div>
   )
-}
-
+} 
 export default App
