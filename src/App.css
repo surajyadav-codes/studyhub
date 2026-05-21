@@ -4,11 +4,11 @@ body {
   font-family: Arial, sans-serif;
 
   background: linear-gradient(
-    135deg,
-    #0f172a,
-    #1e293b,
-    #111827
-  );
+  135deg,
+  white,
+  #1f2937,
+  #000000
+);
 
   color:white;
 }
