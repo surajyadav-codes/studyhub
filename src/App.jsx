@@ -4,9 +4,13 @@ import { supabase } from './supabase'
 
 function App() {
   const [email, setEmail] = useState('')
+  const [editingId, setEditingId] = useState(null)
+  const [editedText, setEditedText] = useState('')
   const [password, setPassword] = useState('')
   const [note, setNote] = useState('')
   const [title, setTitle] = useState('')
+  const [search, setSearch] = useState('')
+  const [openTitle, setOpenTitle] = useState(null)
   const [notes, setNotes] = useState([])
   const [user, setUser] = useState(null)
 
@@ -111,6 +115,23 @@ function App() {
     }
   }, [])
 
+  async function updateNote(id) {
+
+  const { error } = await supabase
+    .from('notes')
+    .update({
+      content: editedText
+    })
+    .eq('id', id)
+
+  if(error){
+    alert(error.message)
+  } else {
+    alert('Note updated!')
+    setEditingId(null)
+    getNotes()
+  }
+}
   async function deleteNote(id) {
     const { error } = await supabase.from('notes').delete().eq('id', id)
 
@@ -187,49 +208,79 @@ function App() {
         </div>
       )}
 
+<input
+  type="text"
+  placeholder="Search notes..."
+  value={search}
+  onChange={(e) => setSearch(e.target.value)}
+/>
+
+<br /><br />
       <h2>Saved Notes</h2>
-      {
-     
-  Object.entries(
-    notes.reduce((groups, item) => {
+      {Object.entries(groupedNotes).filter(([title]) =>
+  title.toLowerCase().includes(search.toLowerCase())
+).map(([title, items]) => (
+        <div key={title} className="note-card">
+          <h2
+            className="title-heading"
+            onClick={() =>
+              setOpenTitle(openTitle === title ? null : title)
+            }
+          >
+            {openTitle === title ? '▼' : '▶'} {title}
+          </h2>
+          {openTitle === title &&
+            items.map((item) => (
+              <div key={item.id} className="note-row">
+ {
+  editingId === item.id ? (
 
-      if (!groups[item.title]) {
-        groups[item.title] = []
-      }
+    <input
+      type="text"
+      value={editedText}
+      onChange={(e) => setEditedText(e.target.value)}
+    />
 
-      groups[item.title].push(item)
+  ) : (
 
-      return groups
+    <p>{item.content}</p>
 
-    }, {})
-  ).map(([title, items]) => (
-
-    <div key={title} className="note-card">
-
-      <h2>{title}</h2>
-
-      {
-        items.map((item) => (
-
-          <div key={item.id} className="note-row">
-
-            <p>{item.content}</p>
-
-            <button
-              className="delete-btn"
-              onClick={() => deleteNote(item.id)}
-            >
-              Delete
-            </button>
-
-          </div>
-        ))
-      }
-
-    </div>
-  ))
+  )
 }
+{
+  editingId === item.id ? (
+
+    <button
+      className="save-btn"
+      onClick={() => updateNote(item.id)}
+    >
+      Save
+    </button>
+
+  ) : (
+
+    <button
+      onClick={() => {
+        setEditingId(item.id)
+        setEditedText(item.content)
+      }}
+    >
+      Edit
+    </button>
+
+  )
+}
+                <button
+                  className="delete-btn"
+                  onClick={() => deleteNote(item.id)}
+                >
+                  Delete
+                </button>
+              </div>
+            ))}
+        </div>
+      ))}
     </div>
   )
-} 
+}
 export default App
