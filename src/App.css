@@ -14,9 +14,20 @@ body {
 }
 
 .container{
-  max-width: 700px;
-  margin: auto;
-  padding: 20px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
+  background: linear-gradient(
+    135deg,
+    #3b4252,
+    #1e293b,
+    #020617
+  );
+
+  color: white;
 }
 
 h1{
@@ -33,13 +44,14 @@ input{
   font-size: 16px;
 }
 
-button{
-  padding: 10px 20px;
+button {
+  padding: 10px 18px;
   border: none;
   border-radius: 10px;
-  margin-top: 10px;
+  margin: 5px;
   cursor: pointer;
-  font-size: 15px;
+  font-weight: 600;
+  transition: 0.2s;
 }
 
 .note-card {
@@ -56,8 +68,11 @@ button{
   box-shadow: 0 4px 20px rgba(0,0,0,0.3);
 }
 
-.note-card h2{
-  color: #38bdf8;
+.note-card {
+  background: #1e293b;
+  padding: 20px;
+  border-radius: 16px;
+  margin-top: 20px;
 }
 
 .delete-btn{
@@ -106,4 +121,41 @@ button{
 .title-heading {
   cursor: pointer;
   user-select: none;
+}
+input {
+  width: 300px;
+  padding: 12px;
+  margin: 8px 0;
+  border: none;
+  border-radius: 10px;
+  background: #1e293b;
+  color: white;
+  font-size: 15px;
+}
+button:hover {
+  opacity: 0.85;
+}
+.note-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #0f172a;
+  padding: 12px;
+  border-radius: 10px;
+  margin-top: 10px;
+}
+.title-heading {
+  cursor: pointer;
+  font-size: 22px;
+  font-weight: 700;
+}
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.pdf-btn {
+  background: #22c55e;
+  color: white;
+  margin-top: 10px;
 }
