@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import './App.css'
 import { supabase } from './supabase'
+import jsPDF from 'jspdf'
 
 function App() {
   const [email, setEmail] = useState('')
@@ -14,30 +15,33 @@ function App() {
   const [notes, setNotes] = useState([])
   const [user, setUser] = useState(null)
 
-  async function saveNote() {
-    if (!user) {
-      alert('Please login before saving a note.')
-      return
-    }
+async function saveNote() {
 
-    const { data, error } = await supabase.from('notes').insert([
+  if (!user) {
+    alert('Please login before saving a note.')
+    return
+  }
+
+  const { data, error } = await supabase
+    .from('notes')
+    .insert([
       {
-        title,
-        content: note,
+        title: title.trim().toLowerCase(),
+        content: note.trim(),
         user_id: user.id,
       },
     ])
 
-    if (error) {
-      alert(error.message)
-    } else {
-      alert('Note saved!')
-      setNote('')
-      setTitle('')
-      getNotes()
-      console.log(data)
-    }
+  if (error) {
+    alert(error.message)
+  } else {
+    alert('Note saved!')
+    setNote('')
+    setTitle('')
+    getNotes()
+    console.log(data)
   }
+}
 
   async function getNotes(currentUser = user) {
     if (!currentUser) return
@@ -143,6 +147,31 @@ function App() {
     }
   }
 
+  function downloadPDF(title, items) {
+
+  const doc = new jsPDF()
+
+  doc.setFontSize(20)
+  doc.text(title, 20, 20)
+
+  let y = 40
+
+  items.forEach((item, index) => {
+
+    doc.setFontSize(14)
+
+    doc.text(
+      `${index + 1}. ${item.content}`,
+      20,
+      y
+    )
+
+    y += 15
+  })
+
+  doc.save(`${title}.pdf`)
+}
+
   async function logout() {
     await supabase.auth.signOut()
     alert('Logged out!')
@@ -160,11 +189,16 @@ function App() {
 
   return (
     <div className="container">
-      <h1>StudyHub</h1>
+      <div className="navbar">
+  <h1>StudyHub</h1>
+
+
+</div>
       <p>Status: {user ? 'Logged in' : 'Not logged in'}</p>
       {user && <p>Logged in as: {user.email}</p>}
 
-      <div className="auth-section">
+     {!user && (
+  <div className="auth-section">
         <input
           type="email"
           value={email}
@@ -181,7 +215,8 @@ function App() {
         <br />
         <button onClick={signUp}>Sign Up</button>
         <button onClick={login}>Login</button>
-      </div>
+    </div>
+)}
 
       {user && (
         <div className="note-section">
@@ -227,8 +262,15 @@ function App() {
               setOpenTitle(openTitle === title ? null : title)
             }
           >
-            {openTitle === title ? '▼' : '▶'} {title}
+           {openTitle === title ? '▼' : '▶'} 
+{title.charAt(0).toUpperCase() + title.slice(1)}
           </h2>
+          <button
+  className="pdf-btn"
+  onClick={() => downloadPDF(title, items)}
+>
+  Download PDF
+</button>
           {openTitle === title &&
             items.map((item) => (
               <div key={item.id} className="note-row">
