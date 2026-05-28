@@ -15,6 +15,7 @@ function App() {
   const [notes, setNotes] = useState([])
   const [user, setUser] = useState(null)
   const [pdfFile, setPdfFile] = useState(null)
+  
 
 async function saveNote() {
 
@@ -44,7 +45,7 @@ async function saveNote() {
       .from('notes-pdf')
       .upload(fileName, pdfFile)
 
-    // agar upload fail ho
+    // if upload is fail 
     if (uploadError) {
       alert(uploadError.message)
       return
@@ -85,23 +86,11 @@ async function saveNote() {
   }
 }
 
-  async function getNotes(currentUser = user) {
+ async function getNotes() {
 
-  let query = supabase
+  const { data, error } = await supabase
     .from('notes')
     .select('*')
-    .eq('is_public', true)
-  if (currentUser) {
-
-    query = supabase
-      .from('notes')
-      .select('*')
-      .or(
-        `is_public.eq.true,user_id.eq.${currentUser.id}`
-      )
-  }
-
-  const { data, error } = await query
 
   if (error) {
     console.log(error)
@@ -143,9 +132,7 @@ async function saveNote() {
     const { data } = await supabase.auth.getSession()
     const currentUser = data.session?.user || null
     setUser(currentUser)
-    if (currentUser) {
-      getNotes(currentUser)
-    }
+   getNotes(currentUser)
   }
 
   useEffect(() => {
