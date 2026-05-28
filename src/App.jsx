@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
+import jsPDF from 'jspdf'
 import './App.css'
 import { supabase } from './supabase'
-import jsPDF from 'jspdf'
 
 function App() {
   const [email, setEmail] = useState('')
@@ -14,49 +14,101 @@ function App() {
   const [openTitle, setOpenTitle] = useState(null)
   const [notes, setNotes] = useState([])
   const [user, setUser] = useState(null)
+  const [pdfFile, setPdfFile] = useState(null)
 
 async function saveNote() {
 
+  if (!note && !pdfFile) {
+  alert('Write note or upload PDF')
+  return
+}
   if (!user) {
-    alert('Please login before saving a note.')
+    alert('Please login first')
     return
   }
 
-  const { data, error } = await supabase
+  let pdfUrl = ''
+
+  // PDF upload section
+  if (pdfFile) {
+
+    // unique file name
+    const fileName =
+      `${Date.now()}-${pdfFile.name}`
+
+    // upload to Supabase storage
+    const {
+      data: uploadData,
+      error: uploadError
+    } = await supabase.storage
+      .from('notes-pdf')
+      .upload(fileName, pdfFile)
+
+    // agar upload fail ho
+    if (uploadError) {
+      alert(uploadError.message)
+      return
+    }
+
+    // public URL generate
+    const { data } = supabase.storage
+      .from('notes-pdf')
+      .getPublicUrl(fileName)
+
+    pdfUrl = data.publicUrl
+  }
+
+  // database save
+  const { error } = await supabase
     .from('notes')
     .insert([
       {
         title: title.trim().toLowerCase(),
-        content: note.trim(),
+        content: note,
+        pdf_url: pdfUrl,
         user_id: user.id,
+        is_public: true,
       },
     ])
 
   if (error) {
     alert(error.message)
   } else {
-    alert('Note saved!')
-    setNote('')
+
+    alert('Note uploaded!')
+
     setTitle('')
+    setNote('')
+    setPdfFile(null)
+
     getNotes()
-    console.log(data)
   }
 }
 
   async function getNotes(currentUser = user) {
-    if (!currentUser) return
 
-    const { data, error } = await supabase
+  let query = supabase
+    .from('notes')
+    .select('*')
+    .eq('is_public', true)
+  if (currentUser) {
+
+    query = supabase
       .from('notes')
       .select('*')
-      .eq('user_id', currentUser.id)
-
-    if (error) {
-      console.log(error)
-    } else {
-      setNotes(data)
-    }
+      .or(
+        `is_public.eq.true,user_id.eq.${currentUser.id}`
+      )
   }
+
+  const { data, error } = await query
+
+  if (error) {
+    console.log(error)
+  } else {
+    setNotes(data)
+  }
+}
 
   async function login() {
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -146,27 +198,43 @@ async function saveNote() {
       getNotes()
     }
   }
+function downloadPDF(title, items) {
 
-  function downloadPDF(title, items) {
+  // Agar uploaded PDF hai
+  if (items[0].pdf_url) {
 
+    window.open(items[0].pdf_url, '_blank')
+    return
+  }
+
+  // Agar sirf text notes hain
   const doc = new jsPDF()
 
-  doc.setFontSize(20)
-  doc.text(title, 20, 20)
+  doc.setFontSize(22)
+
+  doc.text(
+    title.toUpperCase(),
+    20,
+    20
+  )
 
   let y = 40
 
   items.forEach((item, index) => {
 
+    const text =
+      `${index + 1}. ${item.content}`
+
+    const splitText =
+      doc.splitTextToSize(text, 170)
+
     doc.setFontSize(14)
 
-    doc.text(
-      `${index + 1}. ${item.content}`,
-      20,
-      y
-    )
+    doc.text(splitText, 20, y)
 
-    y += 15
+    y += splitText.length * 10
+
+    y += 10
   })
 
   doc.save(`${title}.pdf`)
@@ -234,6 +302,11 @@ async function saveNote() {
             onChange={(e) => setNote(e.target.value)}
           />
           <br />
+          <input
+        type="file"
+        accept="application/pdf"
+        onChange={(e) => setPdfFile(e.target.files[0])}
+         />
           <button className="save-btn" onClick={saveNote}>
             Save Note
           </button>
@@ -265,12 +338,49 @@ async function saveNote() {
            {openTitle === title ? '▼' : '▶'} 
 {title.charAt(0).toUpperCase() + title.slice(1)}
           </h2>
-          <button
-  className="pdf-btn"
-  onClick={() => downloadPDF(title, items)}
->
-  Download PDF
-</button>
+          
+{
+  user ? (
+
+    <button
+      className="pdf-btn"
+      onClick={() =>
+        downloadPDF(title, items)
+      }
+    >
+      Download PDF
+    </button>
+
+  ) : (
+
+    <button
+      className="pdf-btn"
+      onClick={() =>
+        alert('Login to download PDF')
+      }
+    >
+      Download PDF
+    </button>
+
+  )
+}
+
+{
+  items[0].pdf_url && (
+
+    <a
+      href={items[0].pdf_url}
+      target="_blank"
+      rel="noreferrer"
+    >
+
+      <button className="pdf-btn">
+        View PDF
+      </button>
+
+    </a>
+  )
+}
           {openTitle === title &&
             items.map((item) => (
               <div key={item.id} className="note-row">
