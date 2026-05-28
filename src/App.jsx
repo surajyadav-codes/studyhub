@@ -15,7 +15,8 @@ function App() {
   const [notes, setNotes] = useState([])
   const [user, setUser] = useState(null)
   const [pdfFile, setPdfFile] = useState(null)
-  
+  const [viewNotes, setViewNotes] = useState([])
+  const [viewTitle, setViewTitle] = useState('')
 
 async function saveNote() {
 
@@ -351,7 +352,15 @@ function downloadPDF(title, items) {
 
   )
 }
-
+<button
+  className="pdf-btn"
+  onClick={() => {
+    setViewNotes(items)
+    setViewTitle(title)
+  }}
+>
+  View Notes
+</button>
 {
   items[0].pdf_url && (
 
@@ -398,27 +407,73 @@ function downloadPDF(title, items) {
 
   ) : (
 
+    user?.id === item.user_id && (
+
+      <button
+        onClick={() => {
+          setEditingId(item.id)
+          setEditedText(item.content)
+        }}
+      >
+        Edit
+      </button>
+
+    )
+
+  )
+}
+               {
+  user?.id === item.user_id && (
+
     <button
-      onClick={() => {
-        setEditingId(item.id)
-        setEditedText(item.content)
-      }}
+      className="delete-btn"
+      onClick={() => deleteNote(item.id)}
     >
-      Edit
+      Delete
     </button>
 
   )
 }
-                <button
-                  className="delete-btn"
-                  onClick={() => deleteNote(item.id)}
-                >
-                  Delete
-                </button>
               </div>
             ))}
         </div>
       ))}
+      {
+  viewNotes.length > 0 && (
+
+    <div className="preview-modal">
+
+      <div className="preview-box">
+
+        <h2>
+          {viewTitle.toUpperCase()}
+        </h2>
+
+        {
+          viewNotes.map((item, index) => (
+
+            <p key={item.id}>
+              {index + 1}. {item.content}
+            </p>
+
+          ))
+        }
+
+        <button
+          className="close-btn"
+          onClick={() => {
+            setViewNotes([])
+            setViewTitle('')
+          }}
+        >
+          Close
+        </button>
+
+      </div>
+
+    </div>
+  )
+}
     </div>
   )
 }
